@@ -37,7 +37,7 @@ public class RegisterServlet extends HttpServlet {
             user.setFullName(request.getParameter("fullName"));
             user.setPhone(WebUtil.trimToNull(request.getParameter("phone")));
             userService.register(user, password);
-            WebUtil.success(request, "Đăng ký thành công. Ông có thể đăng nhập ngay.");
+            WebUtil.success(request, "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
             WebUtil.redirect(request, response, "/login");
         } catch (IllegalArgumentException ex) {
             request.setAttribute("pageError", ex.getMessage());

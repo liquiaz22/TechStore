@@ -10,4 +10,7 @@ public interface AddressesDAO extends GenericDAO<Addresses> {
     List<Addresses> findByUserId(Long userId);
     Optional<Addresses> findDefaultByUserId(Long userId);
     int clearDefaultByUserId(Long userId);
+    Addresses saveForUser(Long userId, Addresses address);
+    boolean deleteForUser(Long userId, Long addressId);
+    boolean setDefaultForUser(Long userId, Long addressId);
 }

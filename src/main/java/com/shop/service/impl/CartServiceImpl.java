@@ -53,8 +53,12 @@ public class CartServiceImpl extends AbstractService<Cart> implements CartServic
                 .orElseGet(List::of);
     }
 
+    @Override public long countItems(Long userId) {
+        return cartItemDAO.countQuantityByUserId(userId);
+    }
+
     @Override public CartItem addItem(Long userId, Long variantId, int quantity) {
-        if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
+        if (quantity <= 0) throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
         Cart cart = getOrCreateActiveCart(userId);
         ProductVariant variant = requireAvailableVariant(variantId, quantity);
         CartItem item = cartItemDAO.findByCartAndVariant(cart.getCartId(), variantId).orElse(null);
@@ -67,7 +71,7 @@ public class CartServiceImpl extends AbstractService<Cart> implements CartServic
         } else {
             int newQuantity = item.getQuantity() + quantity;
             if (newQuantity > variant.getStockQuantity()) {
-                throw new IllegalArgumentException("Requested quantity exceeds stock");
+                throw new IllegalArgumentException("Số lượng yêu cầu vượt quá tồn kho.");
             }
             item.setQuantity(newQuantity);
             item = cartItemDAO.update(item);
@@ -76,7 +80,7 @@ public class CartServiceImpl extends AbstractService<Cart> implements CartServic
     }
 
     @Override public CartItem updateQuantity(Long userId, Long variantId, int quantity) {
-        if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
+        if (quantity <= 0) throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
         Cart cart = cartDAO.findActiveByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Active cart not found"));
         ProductVariant variant = requireAvailableVariant(variantId, quantity);
@@ -103,10 +107,10 @@ public class CartServiceImpl extends AbstractService<Cart> implements CartServic
     private ProductVariant requireAvailableVariant(Long variantId, int quantity) {
         ProductVariant variant = variantDAO.findById(variantId);
         if (variant == null || !variant.isActive() || !"ACTIVE".equals(variant.getProduct().getStatus())) {
-            throw new IllegalArgumentException("Product variant is unavailable");
+            throw new IllegalArgumentException("Phiên bản sản phẩm hiện không khả dụng.");
         }
         if (quantity > variant.getStockQuantity()) {
-            throw new IllegalArgumentException("Requested quantity exceeds stock");
+            throw new IllegalArgumentException("Số lượng yêu cầu vượt quá tồn kho.");
         }
         return variant;
     }

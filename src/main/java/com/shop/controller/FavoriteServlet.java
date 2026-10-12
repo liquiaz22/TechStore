@@ -1,8 +1,13 @@
 package com.shop.controller;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
+import com.shop.entity.ProductVariant;
 import com.shop.service.FavoriteService;
+import com.shop.service.ProductVariantService;
 import com.shop.service.impl.FavoriteServiceImpl;
 import com.shop.service.impl.ProductImageServiceImpl;
 import com.shop.service.impl.ProductVariantServiceImpl;
@@ -19,15 +24,21 @@ import jakarta.servlet.http.HttpServletResponse;
 public class FavoriteServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final FavoriteService favoriteService = new FavoriteServiceImpl();
+    private final ProductVariantService variantService = new ProductVariantServiceImpl();
     private final ProductViewMapper viewMapper = new ProductViewMapper(
-            new ProductVariantServiceImpl(), new ProductImageServiceImpl());
+            variantService, new ProductImageServiceImpl());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Long userId = WebUtil.currentUser(request).getUserId();
-        request.setAttribute("productCards", favoriteService.findByUserId(userId).stream()
+        var favorites = favoriteService.findByUserId(userId);
+        Map<Long, List<ProductVariant>> favoriteVariants = new LinkedHashMap<>();
+        favorites.forEach(favorite -> favoriteVariants.put(favorite.getProduct().getProductId(),
+                variantService.findAvailableByProductId(favorite.getProduct().getProductId())));
+        request.setAttribute("productCards", favorites.stream()
                 .map(favorite -> viewMapper.toCard(favorite.getProduct())).toList());
+        request.setAttribute("favoriteVariants", favoriteVariants);
         WebUtil.forward(request, response, "favorites");
     }
 

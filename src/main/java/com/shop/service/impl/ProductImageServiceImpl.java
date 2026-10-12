@@ -1,5 +1,6 @@
 package com.shop.service.impl;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,41 @@ public class ProductImageServiceImpl extends AbstractService<ProductImage>
             throw new IllegalArgumentException("Sản phẩm của hình ảnh không hợp lệ.");
         }
         image.setImageUrl(ValidationUtil.requiredText(image.getImageUrl(), "URL hình ảnh", 500));
-        return imageDAO.create(image);
+        validateImageUrl(image.getImageUrl());
+        if (image.getVariant() != null
+                && !image.getProduct().getProductId().equals(
+                        image.getVariant().getProduct().getProductId())) {
+            throw new IllegalArgumentException("Phiên bản ảnh không thuộc sản phẩm đã chọn.");
+        }
+        if (image.getSortOrder() < 0) {
+            throw new IllegalArgumentException("Thứ tự hình ảnh không được âm.");
+        }
+        return imageDAO.createWithPrimarySelection(image);
+    }
+
+    @Override
+    public ProductImage updateMetadata(Long productId, Long imageId, int sortOrder, boolean primary) {
+        if (sortOrder < 0) throw new IllegalArgumentException("Thứ tự hình ảnh không được âm.");
+        return imageDAO.updateMetadata(productId, imageId, sortOrder, primary);
+    }
+
+    private void validateImageUrl(String imageUrl) {
+        if (imageUrl.startsWith("assets/")) {
+            if (imageUrl.contains("..") || imageUrl.contains("\\")
+                    || !imageUrl.matches("[A-Za-z0-9/_\\-.]+")) {
+                throw new IllegalArgumentException("Đường dẫn hình ảnh cục bộ không hợp lệ.");
+            }
+            return;
+        }
+        try {
+            URI uri = URI.create(imageUrl);
+            if (!("http".equalsIgnoreCase(uri.getScheme())
+                    || "https".equalsIgnoreCase(uri.getScheme()))
+                    || uri.getHost() == null) {
+                throw new IllegalArgumentException("URL hình ảnh chỉ hỗ trợ HTTP hoặc HTTPS.");
+            }
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("URL hình ảnh không hợp lệ.");
+        }
     }
 }

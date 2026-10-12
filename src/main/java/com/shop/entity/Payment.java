@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,15 +45,32 @@ public class Payment {
     @Column(name = "ProviderTransactionId", length = 200)
     private String providerTransactionId;
 
+    @Column(name = "MerchantTransactionRef", length = 100)
+    private String merchantTransactionRef;
+
+    @Column(name = "ProviderResponseCode", length = 10)
+    private String providerResponseCode;
+
+    @Column(name = "BankCode", length = 30)
+    private String bankCode;
+
     @Column(name = "PaidAt")
     private LocalDateTime paidAt;
 
     @Column(name = "CreatedAt", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "UpdatedAt")
+    private LocalDateTime updatedAt;
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (paymentStatus == null || paymentStatus.isBlank()) paymentStatus = "PENDING";
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

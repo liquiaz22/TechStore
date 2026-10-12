@@ -58,12 +58,25 @@ public class UserServiceImpl extends AbstractService<User> implements UserServic
     }
 
     @Override
+    public User updateProfile(Long userId, String fullName, String phone) {
+        User user = requireUser(userId);
+        user.setFullName(ValidationUtil.requiredText(fullName, "Họ và tên", 150));
+        user.setPhone(ValidationUtil.optionalPhone(phone, "Số điện thoại"));
+        return userDAO.update(user);
+    }
+
+    @Override
     public void changePassword(Long userId, String currentPassword, String newPassword) {
         User user = requireUser(userId);
-        if (!BCrypt.checkpw(currentPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Current password is incorrect");
+        if (currentPassword == null || currentPassword.isEmpty()
+                || currentPassword.length() > 72
+                || !BCrypt.checkpw(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không đúng.");
         }
         validatePassword(newPassword);
+        if (BCrypt.checkpw(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại.");
+        }
         user.setPasswordHash(BCrypt.hashpw(newPassword, BCrypt.gensalt(12)));
         userDAO.update(user);
     }

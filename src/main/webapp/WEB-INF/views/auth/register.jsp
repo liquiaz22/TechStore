@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Đăng ký" scope="request" />
-<jsp:include page="../components/header.jsp" />
+<jsp:include page="../components/store-header.jsp" />
 <section class="auth-shell">
     <div class="panel auth-card">
         <p class="eyebrow">Tạo tài khoản</p>
@@ -18,4 +18,4 @@
         <p class="auth-footer">Đã có tài khoản? <a href="${ctx}/login">Đăng nhập</a></p>
     </div>
 </section>
-<jsp:include page="../components/footer.jsp" />
+<jsp:include page="../components/store-footer.jsp" />

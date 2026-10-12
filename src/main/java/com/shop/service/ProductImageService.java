@@ -9,4 +9,5 @@ public interface ProductImageService extends GenericService<ProductImage> {
     List<ProductImage> findByProductId(Long productId);
     List<ProductImage> findByVariantId(Long variantId);
     Optional<ProductImage> findPrimaryByProductId(Long productId);
+    ProductImage updateMetadata(Long productId, Long imageId, int sortOrder, boolean primary);
 }

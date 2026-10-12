@@ -35,33 +35,34 @@ public class AddressesServiceImpl extends AbstractService<Addresses> implements 
     }
 
     @Override
+    public Optional<Addresses> findForUser(Long userId, Long addressId) {
+        if (userId == null || addressId == null) return Optional.empty();
+        Addresses address = addressesDAO.findById(addressId);
+        return address != null && address.getUser().getUserId().equals(userId)
+                ? Optional.of(address)
+                : Optional.empty();
+    }
+
+    @Override
     public Addresses saveForUser(Long userId, Addresses address) {
         if (address == null) throw new IllegalArgumentException("Address is required");
         validate(address);
-        User user = userDAO.findById(userId);
-        if (user == null) throw new IllegalArgumentException("User not found");
-
-        if (address.getAddressId() != null) {
-            Addresses current = addressesDAO.findById(address.getAddressId());
-            if (current == null || !current.getUser().getUserId().equals(userId)) {
-                throw new IllegalArgumentException("Address does not belong to this user");
-            }
-        }
-
-        boolean firstAddress = addressesDAO.findByUserId(userId).isEmpty();
-        address.setUser(user);
-        if (address.isDefaultAddress() || firstAddress) {
-            addressesDAO.clearDefaultByUserId(userId);
-            address.setDefaultAddress(true);
-        }
-        return address.getAddressId() == null
-                ? createAndReturn(address)
-                : addressesDAO.update(address);
+        if (userDAO.findById(userId) == null) throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+        return addressesDAO.saveForUser(userId, address);
     }
 
-    private Addresses createAndReturn(Addresses address) {
-        addressesDAO.create(address);
-        return address;
+    @Override
+    public void deleteForUser(Long userId, Long addressId) {
+        if (!addressesDAO.deleteForUser(userId, addressId)) {
+            throw new IllegalArgumentException("Địa chỉ không tồn tại hoặc không thuộc tài khoản này.");
+        }
+    }
+
+    @Override
+    public void setDefaultForUser(Long userId, Long addressId) {
+        if (!addressesDAO.setDefaultForUser(userId, addressId)) {
+            throw new IllegalArgumentException("Địa chỉ không tồn tại hoặc không thuộc tài khoản này.");
+        }
     }
 
     private void validate(Addresses address) {

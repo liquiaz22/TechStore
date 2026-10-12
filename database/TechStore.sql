@@ -4,6 +4,10 @@ GO
 USE TechStore;
 GO
 
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
 CREATE TABLE Users (
     UserId          BIGINT IDENTITY(1,1) PRIMARY KEY,
     Email           VARCHAR(320) NOT NULL,
@@ -41,6 +45,27 @@ CREATE TABLE Addresses (
     CONSTRAINT FK_Addresses_Users
         FOREIGN KEY (UserId) REFERENCES Users(UserId)
 );
+GO
+
+CREATE TABLE PasswordResetTokens (
+    PasswordResetTokenId BIGINT IDENTITY(1,1) PRIMARY KEY,
+    UserId               BIGINT NOT NULL,
+    TokenHash            VARCHAR(64) NOT NULL,
+    ExpiresAt            DATETIME2 NOT NULL,
+    UsedAt               DATETIME2 NULL,
+    CreatedAt            DATETIME2 NOT NULL
+                         CONSTRAINT DF_PasswordResetTokens_CreatedAt DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT FK_PasswordResetTokens_Users
+        FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+CREATE UNIQUE INDEX UX_PasswordResetTokens_TokenHash
+    ON PasswordResetTokens(TokenHash);
+CREATE INDEX IX_PasswordResetTokens_UserCreated
+    ON PasswordResetTokens(UserId, CreatedAt DESC);
+CREATE INDEX IX_PasswordResetTokens_Expiry
+    ON PasswordResetTokens(ExpiresAt) WHERE UsedAt IS NULL;
 GO
 
 CREATE TABLE Categories (
@@ -106,6 +131,7 @@ CREATE TABLE ProductVariants (
     OriginalPrice    DECIMAL(18,2) NULL,
     StockQuantity    INT NOT NULL DEFAULT 0,
     IsActive         BIT NOT NULL DEFAULT 1,
+    UpdatedAt        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
 
     CONSTRAINT FK_ProductVariants_Products
         FOREIGN KEY (ProductId) REFERENCES Products(ProductId),
@@ -149,6 +175,9 @@ CREATE TABLE ProductSpecifications (
     CONSTRAINT FK_ProductSpecifications_Products
         FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );
+
+CREATE UNIQUE INDEX UX_ProductSpecifications_ProductName
+    ON ProductSpecifications(ProductId, SpecificationName);
 GO
 
 CREATE TABLE Favorites (
@@ -248,6 +277,8 @@ CREATE TABLE Orders (
 
 CREATE INDEX IX_Orders_UserId_CreatedAt
     ON Orders(UserId, CreatedAt DESC);
+CREATE INDEX IX_Orders_Status_UpdatedAt
+    ON Orders(Status, UpdatedAt DESC) INCLUDE (TotalAmount, UserId);
 GO
 
 CREATE TABLE OrderItems (
@@ -283,8 +314,12 @@ CREATE TABLE Payments (
     PaymentStatus       VARCHAR(30) NOT NULL DEFAULT 'PENDING',
     Amount              DECIMAL(18,2) NOT NULL,
     ProviderTransactionId VARCHAR(200) NULL,
+    MerchantTransactionRef VARCHAR(100) NULL,
+    ProviderResponseCode VARCHAR(10) NULL,
+    BankCode             VARCHAR(30) NULL,
     PaidAt              DATETIME2 NULL,
     CreatedAt           DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    UpdatedAt           DATETIME2 NULL,
 
     CONSTRAINT FK_Payments_Orders
         FOREIGN KEY (OrderId) REFERENCES Orders(OrderId),
@@ -294,6 +329,9 @@ CREATE TABLE Payments (
         CHECK (PaymentStatus IN ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED')),
     CONSTRAINT CK_Payments_Amount CHECK (Amount >= 0)
 );
+
+CREATE UNIQUE INDEX UX_Payments_MerchantTransactionRef
+    ON Payments(MerchantTransactionRef) WHERE MerchantTransactionRef IS NOT NULL;
 GO
 
 CREATE TABLE OrderStatusHistory (

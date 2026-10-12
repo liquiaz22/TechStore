@@ -1,92 +1,85 @@
 package com.shop.utils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-public class VNPayConfig {
-    
-    public static final String vnp_PayUrl = requiredConfig("vnpay.pay.url");
-    public static final String vnp_ReturnUrl = requiredConfig("vnpay.return.url");
-    public static final String vnp_TmnCode = requiredConfig("vnpay.tmn.code");
-    public static final String vnp_HashSecret = requiredConfig("vnpay.hash.secret");
-    public static final String vnp_apiUrl = requiredConfig("vnpay.api.url");
+public final class VNPayConfig {
+    private VNPayConfig() {}
 
-    // HÀM MÃ HÓA SHA-512 (Chuẩn bảo mật VNPAY yêu cầu)
-    public static String hmacSHA512(final String key, final String data) {
+    public static boolean isPaymentConfigured() {
         try {
-            if (key == null || data == null) {
-                throw new NullPointerException();
-            }
-            final Mac hmac512 = Mac.getInstance("HmacSHA512");
-            byte[] hmacKeyBytes = key.getBytes();
-            final SecretKeySpec secretKey = new SecretKeySpec(hmacKeyBytes, "HmacSHA512");
-            hmac512.init(secretKey);
-            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
-            byte[] result = hmac512.doFinal(dataBytes);
-            StringBuilder sb = new StringBuilder(2 * result.length);
-            for (byte b : result) {
-                sb.append(String.format("%02x", b & 0xff));
-            }
-            return sb.toString();
+            validatePaymentConfiguration();
+            return true;
+        } catch (IllegalStateException ex) {
+            return false;
+        }
+    }
+
+    public static void validatePaymentConfiguration() {
+        requireForPayment("vnpay.tmn.code", "TECHSTORE_VNPAY_TMN_CODE");
+        requireForPayment("vnpay.hash.secret", "TECHSTORE_VNPAY_HASH_SECRET");
+        required("vnpay.pay.url");
+        returnUrl();
+    }
+
+    public static String payUrl() {
+        return required("vnpay.pay.url");
+    }
+
+    public static String terminalCode() {
+        return required("vnpay.tmn.code");
+    }
+
+    public static String hashSecret() {
+        return required("vnpay.hash.secret");
+    }
+
+    public static String returnUrl() {
+        String configured = ConfigUtil.get("vnpay.return.url");
+        if (configured != null && !configured.isBlank()) return configured.trim();
+        String appUrl = required("app.url");
+        if (appUrl.endsWith("/")) appUrl = appUrl.substring(0, appUrl.length() - 1);
+        return appUrl + "/payment/vnpay/return";
+    }
+
+    public static String hmacSHA512(String key, String data) {
+        if (key == null || data == null) throw new IllegalArgumentException("Dữ liệu ký không hợp lệ.");
+        try {
+            Mac hmac = Mac.getInstance("HmacSHA512");
+            hmac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
+            byte[] result = hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(result.length * 2);
+            for (byte value : result) hex.append(String.format("%02x", value & 0xff));
+            return hex.toString();
         } catch (Exception ex) {
-            return "";
+            throw new IllegalStateException("Không thể tạo chữ ký VNPay.", ex);
         }
     }
 
-    // HÀM TẠO CHUỖI HASH ĐỂ NỐI VÀO URL
-    public static String hashAllFields(Map<String, String> fields) {
-        List<String> fieldNames = new ArrayList<>(fields.keySet());
-        Collections.sort(fieldNames);
-        StringBuilder sb = new StringBuilder();
-        Iterator<String> itr = fieldNames.iterator();
-        while (itr.hasNext()) {
-            String fieldName = (String) itr.next();
-            String fieldValue = (String) fields.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                sb.append(fieldName);
-                sb.append("=");
-                sb.append(fieldValue);
-            }
-            if (itr.hasNext()) {
-                sb.append("&");
-            }
-        }
-        return hmacSHA512(vnp_HashSecret, sb.toString());
+    public static String clientIp(HttpServletRequest request) {
+        String address = request.getRemoteAddr();
+        if (address == null || address.isBlank()) return "127.0.0.1";
+        address = address.trim();
+        return address.length() <= 45 ? address : address.substring(0, 45);
     }
 
-    // HÀM TẠO MÃ GIAO DỊCH NGẪU NHIÊN (Mã hóa đơn)
-    public static String getRandomNumber(int len) {
-        Random rnd = new Random();
-        String chars = "0123456789";
-        StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len; i++) {
-            sb.append(chars.charAt(rnd.nextInt(chars.length())));
-        }
-        return sb.toString();
-    }
-    
-    public static String getIpAddress(HttpServletRequest request) {
-        String ipAdress = request.getHeader("X-FORWARDED-FOR");
-        if (ipAdress == null) {
-            ipAdress = request.getRemoteAddr();
-        }
-        return ipAdress;
-    }
-
-    private static String requiredConfig(String key) {
+    private static String required(String key) {
         String value = ConfigUtil.get(key);
         if (value == null || value.isBlank()) {
             throw new IllegalStateException("Thiếu cấu hình bắt buộc: " + key);
+        }
+        return value.trim();
+    }
+
+    private static String requireForPayment(String key, String environmentName) {
+        String value = ConfigUtil.get(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(
+                    "VNPay chưa được cấu hình. Thiếu biến môi trường " + environmentName + ".");
         }
         return value.trim();
     }

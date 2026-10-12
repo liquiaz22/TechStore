@@ -44,9 +44,35 @@ public class FavoriteDAOImpl extends GenericDAOImpl<Favorite> implements Favorit
     @Override
     public List<Favorite> findByUserId(Long userId) {
         return findMany("SELECT f FROM Favorite f JOIN FETCH f.product p "
-                + "LEFT JOIN FETCH p.brand WHERE f.user.userId = :userId "
+                + "JOIN FETCH p.category LEFT JOIN FETCH p.brand WHERE f.user.userId = :userId "
                 + "ORDER BY f.createdAt DESC",
                 q -> q.setParameter("userId", userId));
+    }
+
+    @Override
+    public List<Long> findProductIdsByUserId(Long userId) {
+        EntityManager em = JpaUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT f.product.productId FROM Favorite f "
+                            + "WHERE f.user.userId = :userId", Long.class)
+                    .setParameter("userId", userId)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByUserId(Long userId) {
+        EntityManager em = JpaUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT COUNT(f) FROM Favorite f "
+                            + "WHERE f.user.userId = :userId", Long.class)
+                    .setParameter("userId", userId)
+                    .getSingleResult();
+        } finally {
+            em.close();
+        }
     }
 
     @Override

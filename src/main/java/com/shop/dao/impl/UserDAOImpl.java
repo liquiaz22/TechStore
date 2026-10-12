@@ -15,6 +15,11 @@ public class UserDAOImpl extends GenericDAOImpl<User> implements UserDAO {
 	}
 
     @Override
+    public List<User> findAll() {
+        return findMany("FROM User u ORDER BY u.createdAt DESC, u.userId DESC", q -> {});
+    }
+
+    @Override
     public Optional<User> findByEmail(String email) {
         String normalized = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
         return findOne("FROM User u WHERE LOWER(u.email) = :email",

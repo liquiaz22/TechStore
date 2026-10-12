@@ -33,6 +33,14 @@ public class FavoriteServiceImpl extends AbstractService<Favorite> implements Fa
         return favoriteDAO.findByUserId(userId);
     }
 
+    @Override public List<Long> findProductIdsByUserId(Long userId) {
+        return favoriteDAO.findProductIdsByUserId(userId);
+    }
+
+    @Override public long countByUserId(Long userId) {
+        return favoriteDAO.countByUserId(userId);
+    }
+
     @Override public boolean add(Long userId, Long productId) {
         if (favoriteDAO.exists(userId, productId)) return false;
         User user = userDAO.findById(userId);

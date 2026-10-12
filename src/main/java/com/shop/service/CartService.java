@@ -9,6 +9,7 @@ import com.shop.entity.CartItem;
 public interface CartService extends GenericService<Cart> {
     Cart getOrCreateActiveCart(Long userId);
     List<CartItem> getItems(Long userId);
+    long countItems(Long userId);
     CartItem addItem(Long userId, Long variantId, int quantity);
     CartItem updateQuantity(Long userId, Long variantId, int quantity);
     boolean removeItem(Long userId, Long variantId);

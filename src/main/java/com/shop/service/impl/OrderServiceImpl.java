@@ -29,7 +29,7 @@ import jakarta.persistence.LockModeType;
 
 public class OrderServiceImpl extends AbstractService<Order> implements OrderService {
     private static final Set<String> PAYMENT_METHODS =
-            Set.of("COD", "VNPAY", "MOMO", "BANK_TRANSFER");
+            Set.of("COD", "VNPAY");
     private static final Map<String, Set<String>> TRANSITIONS = Map.of(
             "PENDING", Set.of("CONFIRMED", "CANCELLED"),
             "CONFIRMED", Set.of("PROCESSING", "CANCELLED"),
@@ -50,6 +50,14 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
     @Override public List<Order> findByStatus(String status, int page, int size) {
         return orderDAO.findByStatus(status, page, size);
     }
+    @Override public List<Order> searchForAdmin(String keyword, String status,
+            LocalDateTime from, LocalDateTime toExclusive, int page, int size) {
+        return orderDAO.searchForAdmin(keyword, status, from, toExclusive, page, size);
+    }
+    @Override public long countForAdmin(String keyword, String status,
+            LocalDateTime from, LocalDateTime toExclusive) {
+        return orderDAO.countForAdmin(keyword, status, from, toExclusive);
+    }
 
     @Override
     public Order placeOrder(Long userId, Addresses address, Map<Long, Integer> items,
@@ -63,7 +71,7 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
             tx.begin();
             User user = em.find(User.class, userId);
             if (user == null || !"ACTIVE".equals(user.getStatus())) {
-                throw new IllegalArgumentException("Active user not found");
+                throw new IllegalArgumentException("Tài khoản hiện không thể đặt hàng.");
             }
 
             Order order = new Order();
@@ -80,16 +88,16 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
             BigDecimal subtotal = BigDecimal.ZERO;
             for (Map.Entry<Long, Integer> entry : items.entrySet()) {
                 int quantity = entry.getValue() == null ? 0 : entry.getValue();
-                if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
+                if (quantity <= 0) throw new IllegalArgumentException("Số lượng sản phẩm phải lớn hơn 0.");
 
                 ProductVariant variant = em.find(ProductVariant.class, entry.getKey(),
                         LockModeType.PESSIMISTIC_WRITE);
                 if (variant == null || !variant.isActive()
                         || !"ACTIVE".equals(variant.getProduct().getStatus())) {
-                    throw new IllegalArgumentException("A product variant is unavailable");
+                    throw new IllegalArgumentException("Một phiên bản sản phẩm hiện không còn khả dụng.");
                 }
                 if (variant.getStockQuantity() < quantity) {
-                    throw new IllegalStateException("Insufficient stock for SKU " + variant.getSku());
+                    throw new IllegalStateException("Không đủ tồn kho cho SKU " + variant.getSku() + ".");
                 }
 
                 variant.setStockQuantity(variant.getStockQuantity() - quantity);
@@ -110,7 +118,7 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
             }
 
             BigDecimal total = subtotal.add(shippingFee).subtract(discountAmount);
-            if (total.signum() < 0) throw new IllegalArgumentException("Discount exceeds order total");
+            if (total.signum() < 0) throw new IllegalArgumentException("Giá trị giảm vượt quá tổng đơn hàng.");
             order.setSubtotal(subtotal);
             order.setTotalAmount(total);
 
@@ -120,7 +128,7 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
             payment.setAmount(total);
             em.persist(payment);
 
-            persistHistory(em, order, "PENDING", "Order created", user);
+            persistHistory(em, order, "PENDING", "Đơn hàng được tạo", user);
 
             List<Cart> carts = em.createQuery("FROM Cart c WHERE c.user.userId = :userId "
                     + "AND c.status = 'ACTIVE'", Cart.class)
@@ -146,6 +154,25 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
             Order order = em.find(Order.class, orderId, LockModeType.PESSIMISTIC_WRITE);
             if (order == null) throw new IllegalArgumentException("Order not found");
             requireTransition(order.getStatus(), "CANCELLED");
+            if ("PAID".equals(order.getPaymentStatus())) {
+                throw new IllegalStateException(
+                        "Đơn hàng đã thanh toán không thể hủy trực tiếp. Vui lòng xử lý hoàn tiền.");
+            }
+
+            List<Payment> payments = em.createQuery(
+                    "FROM Payment p WHERE p.order.orderId = :orderId", Payment.class)
+                    .setParameter("orderId", orderId)
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                    .getResultList();
+            boolean activeOnlinePayment = payments.stream().anyMatch(payment ->
+                    "VNPAY".equals(payment.getPaymentMethod())
+                            && "PENDING".equals(payment.getPaymentStatus())
+                            && payment.getCreatedAt() != null
+                            && payment.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(20)));
+            if (activeOnlinePayment) {
+                throw new IllegalStateException(
+                        "Giao dịch VNPay đang chờ xử lý. Vui lòng thử hủy lại sau 20 phút.");
+            }
 
             List<OrderItem> items = em.createQuery(
                     "FROM OrderItem oi WHERE oi.order.orderId = :orderId", OrderItem.class)
@@ -156,6 +183,17 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
                             item.getVariant().getVariantId(), LockModeType.PESSIMISTIC_WRITE);
                     if (variant != null) variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
                 }
+            }
+            for (Payment payment : payments) {
+                if (!"SUCCESS".equals(payment.getPaymentStatus())) {
+                    payment.setPaymentStatus("FAILED");
+                    if (payment.getProviderResponseCode() == null) {
+                        payment.setProviderResponseCode("CANCELLED");
+                    }
+                }
+            }
+            if (!"PAID".equals(order.getPaymentStatus())) {
+                order.setPaymentStatus("FAILED");
             }
             order.setStatus("CANCELLED");
             User changedBy = changedByUserId == null ? null : em.find(User.class, changedByUserId);
@@ -181,6 +219,20 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
             if (order == null) throw new IllegalArgumentException("Order not found");
             requireTransition(order.getStatus(), status);
             order.setStatus(status);
+            if ("COMPLETED".equals(status)) {
+                List<Payment> codPayments = em.createQuery("FROM Payment p "
+                                + "WHERE p.order.orderId = :orderId "
+                                + "AND p.paymentMethod = 'COD' "
+                                + "AND p.paymentStatus = 'PENDING'", Payment.class)
+                        .setParameter("orderId", orderId)
+                        .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                        .getResultList();
+                for (Payment payment : codPayments) {
+                    payment.setPaymentStatus("SUCCESS");
+                    payment.setPaidAt(LocalDateTime.now());
+                }
+                if (!codPayments.isEmpty()) order.setPaymentStatus("PAID");
+            }
             User changedBy = changedByUserId == null ? null : em.find(User.class, changedByUserId);
             persistHistory(em, order, status, trimToNull(note), changedBy);
             tx.commit();
@@ -206,13 +258,13 @@ public class OrderServiceImpl extends AbstractService<Order> implements OrderSer
         address.setAddressLine(ValidationUtil.requiredText(
                 address.getAddressLine(), "Địa chỉ cụ thể", 255));
         ValidationUtil.requireMaxLength(address.toShippingAddress(), "Địa chỉ giao hàng", 500);
-        if (items == null || items.isEmpty()) throw new IllegalArgumentException("Cart is empty");
+        if (items == null || items.isEmpty()) throw new IllegalArgumentException("Giỏ hàng đang trống.");
         if (shippingFee == null || shippingFee.signum() < 0
                 || discount == null || discount.signum() < 0) {
-            throw new IllegalArgumentException("Shipping fee or discount is invalid");
+            throw new IllegalArgumentException("Phí vận chuyển hoặc số tiền giảm không hợp lệ.");
         }
         if (!PAYMENT_METHODS.contains(paymentMethod)) {
-            throw new IllegalArgumentException("Unsupported payment method");
+            throw new IllegalArgumentException("Phương thức thanh toán không được hỗ trợ.");
         }
     }
 

@@ -1,78 +1,96 @@
 package com.shop.utils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import java.util.TimeZone;
+import java.util.TreeMap;
 
-import jakarta.servlet.http.HttpServletRequest;
+public final class VNPayUtil {
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-public class VNPayUtil {
+    private VNPayUtil() {}
 
-    // Hàm nhận vào số tiền và mã giao dịch, trả về ngay đường Link siêu dài của VNPAY
-    public static String createPaymentUrl(double amount, String txnRef, HttpServletRequest request) {
-        try {
-            long amountForVNPay = (long) (amount * 100); // Nhân 100 theo chuẩn VNPAY
-            String vnp_IpAddr = VNPayConfig.getIpAddress(request);
-
-            Map<String, String> vnp_Params = new HashMap<>();
-            vnp_Params.put("vnp_Version", "2.1.0");
-            vnp_Params.put("vnp_Command", "pay");
-            vnp_Params.put("vnp_TmnCode", VNPayConfig.vnp_TmnCode);
-            vnp_Params.put("vnp_Amount", String.valueOf(amountForVNPay));
-            vnp_Params.put("vnp_CurrCode", "VND");
-            vnp_Params.put("vnp_BankCode", "NCB");
-            vnp_Params.put("vnp_TxnRef", txnRef);
-            vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang TechStore #" + txnRef);
-            vnp_Params.put("vnp_OrderType", "other");
-            vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
-            vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
-
-            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-            String vnp_CreateDate = formatter.format(cld.getTime());
-            vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
-            
-            cld.add(Calendar.MINUTE, 15);
-            String vnp_ExpireDate = formatter.format(cld.getTime());
-            vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
-
-            // Build chuỗi Hash và Query
-            List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
-            Collections.sort(fieldNames);
-            StringBuilder hashData = new StringBuilder();
-            StringBuilder query = new StringBuilder();
-            Iterator<String> itr = fieldNames.iterator();
-            while (itr.hasNext()) {
-                String fieldName = itr.next();
-                String fieldValue = vnp_Params.get(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString())).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    if (itr.hasNext()) {
-                        query.append('&');
-                        hashData.append('&');
-                    }
-                }
-            }
-            
-            String queryUrl = query.toString();
-            String vnp_SecureHash = VNPayConfig.hmacSHA512(VNPayConfig.vnp_HashSecret, hashData.toString());
-            queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-            
-            return VNPayConfig.vnp_PayUrl + "?" + queryUrl;
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    public static String createPaymentUrl(BigDecimal amount, String transactionRef,
+            String clientIp) {
+        long vnpayAmount = toVnpayAmount(amount);
+        if (transactionRef == null || !transactionRef.matches("[A-Za-z0-9]{1,100}")) {
+            throw new IllegalArgumentException("Mã tham chiếu VNPay không hợp lệ.");
         }
+
+        LocalDateTime now = LocalDateTime.now(VIETNAM_ZONE);
+        Map<String, String> parameters = new TreeMap<>();
+        parameters.put("vnp_Version", "2.1.0");
+        parameters.put("vnp_Command", "pay");
+        parameters.put("vnp_TmnCode", VNPayConfig.terminalCode());
+        parameters.put("vnp_Amount", String.valueOf(vnpayAmount));
+        parameters.put("vnp_CurrCode", "VND");
+        parameters.put("vnp_TxnRef", transactionRef);
+        parameters.put("vnp_OrderInfo", "Thanh toan don hang TechStore " + transactionRef);
+        parameters.put("vnp_OrderType", "other");
+        parameters.put("vnp_Locale", "vn");
+        parameters.put("vnp_ReturnUrl", VNPayConfig.returnUrl());
+        parameters.put("vnp_IpAddr", clientIp);
+        parameters.put("vnp_CreateDate", DATE_FORMAT.format(now));
+        parameters.put("vnp_ExpireDate", DATE_FORMAT.format(now.plusMinutes(15)));
+
+        String hashData = canonicalData(parameters);
+        String signature = VNPayConfig.hmacSHA512(VNPayConfig.hashSecret(), hashData);
+        return VNPayConfig.payUrl() + "?" + hashData + "&vnp_SecureHash=" + signature;
+    }
+
+    public static boolean verifySignature(Map<String, String> callbackParameters) {
+        if (callbackParameters == null) return false;
+        String provided = callbackParameters.get("vnp_SecureHash");
+        if (provided == null || !provided.matches("(?i)[a-f0-9]{128}")) return false;
+        Map<String, String> signedFields = new TreeMap<>();
+        callbackParameters.forEach((key, value) -> {
+            if (key != null && key.startsWith("vnp_")
+                    && !"vnp_SecureHash".equals(key)
+                    && !"vnp_SecureHashType".equals(key)
+                    && value != null && !value.isEmpty()) {
+                signedFields.put(key, value);
+            }
+        });
+        String expected = VNPayConfig.hmacSHA512(
+                VNPayConfig.hashSecret(), canonicalData(signedFields));
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII),
+                provided.toLowerCase().getBytes(StandardCharsets.US_ASCII));
+    }
+
+    public static long toVnpayAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.valueOf(5_000)) < 0) {
+            throw new IllegalArgumentException("VNPay yêu cầu số tiền tối thiểu 5.000 ₫.");
+        }
+        try {
+            long result = amount.setScale(0, RoundingMode.UNNECESSARY)
+                    .movePointRight(2).longValueExact();
+            if (result <= 0 || String.valueOf(result).length() > 12) {
+                throw new IllegalArgumentException("Số tiền vượt giới hạn VNPay.");
+            }
+            return result;
+        } catch (ArithmeticException ex) {
+            throw new IllegalArgumentException("Số tiền VNPay phải là số nguyên VND.");
+        }
+    }
+
+    private static String canonicalData(Map<String, String> parameters) {
+        StringBuilder result = new StringBuilder();
+        for (Map.Entry<String, String> entry : new TreeMap<>(parameters).entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isEmpty()) continue;
+            if (result.length() > 0) result.append('&');
+            result.append(encode(entry.getKey())).append('=').append(encode(entry.getValue()));
+        }
+        return result.toString();
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.US_ASCII);
     }
 }

@@ -19,6 +19,18 @@ public class ProductSpecificationServiceImpl extends AbstractService<ProductSpec
         return specificationDAO.findByProductId(id);
     }
     @Override public boolean create(ProductSpecification specification) {
+        validate(specification);
+        ensureUniqueName(specification);
+        return specificationDAO.create(specification);
+    }
+
+    @Override public ProductSpecification update(ProductSpecification specification) {
+        validate(specification);
+        ensureUniqueName(specification);
+        return specificationDAO.update(specification);
+    }
+
+    private void validate(ProductSpecification specification) {
         if (specification == null || specification.getProduct() == null) {
             throw new IllegalArgumentException("Sản phẩm của thông số không hợp lệ.");
         }
@@ -26,6 +38,15 @@ public class ProductSpecificationServiceImpl extends AbstractService<ProductSpec
                 specification.getSpecificationName(), "Tên thông số", 150));
         specification.setSpecificationValue(ValidationUtil.requiredText(
                 specification.getSpecificationValue(), "Giá trị thông số", 500));
-        return specificationDAO.create(specification);
+        if (specification.getSortOrder() < 0) {
+            throw new IllegalArgumentException("Thứ tự thông số không được âm.");
+        }
+    }
+
+    private void ensureUniqueName(ProductSpecification specification) {
+        if (specificationDAO.existsByName(specification.getProduct().getProductId(),
+                specification.getSpecificationName(), specification.getSpecificationId())) {
+            throw new IllegalArgumentException("Tên thông số đã tồn tại trong sản phẩm này.");
+        }
     }
 }

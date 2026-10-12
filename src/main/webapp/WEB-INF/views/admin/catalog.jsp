@@ -1,8 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Danh mục và thương hiệu" scope="request" />
-<jsp:include page="../components/header.jsp" />
-<jsp:include page="../components/admin-nav.jsp" />
+<jsp:include page="../components/admin-header.jsp" />
 
 <div class="section-head">
     <div><p class="eyebrow">Catalog</p><h1>Danh mục &amp; thương hiệu</h1></div>
@@ -25,18 +24,19 @@
         </form>
 
         <div class="table-wrap subsection">
-            <table class="data-table">
+            <table class="data-table admin-responsive-table">
                 <thead><tr><th>Tên</th><th>Slug</th><th>Danh mục cha</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                 <tbody>
                 <c:forEach var="category" items="${categories}">
                     <tr>
-                        <td><c:out value="${category.name}" /></td>
-                        <td><c:out value="${category.slug}" /></td>
-                        <td><c:out value="${empty category.parentCategory ? '-' : category.parentCategory.name}" /></td>
-                        <td><span class="badge ${category.active ? 'badge-success' : 'badge-neutral'}">${category.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
-                        <td><div class="table-actions"><a class="btn btn-secondary btn-small" href="${ctx}/admin/catalog?editCategory=${category.categoryId}">Sửa</a><form action="${ctx}/admin/catalog" method="post"><input type="hidden" name="_csrf" value="${sessionScope.csrfToken}"><input type="hidden" name="type" value="category"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="${category.categoryId}"><button class="btn btn-small ${category.active ? 'btn-danger' : 'btn-primary'}" type="submit">${category.active ? 'Ẩn' : 'Bật'}</button></form></div></td>
+                        <td data-label="Tên"><c:out value="${category.name}" /></td>
+                        <td data-label="Slug"><c:out value="${category.slug}" /></td>
+                        <td data-label="Danh mục cha"><c:out value="${empty category.parentCategory ? '—' : category.parentCategory.name}" /></td>
+                        <td data-label="Trạng thái"><span class="badge ${category.active ? 'badge-success' : 'badge-neutral'}">${category.active ? 'Hoạt động' : 'Đang ẩn'}</span></td>
+                        <td data-label="Thao tác"><div class="table-actions"><a class="btn btn-secondary btn-small" href="${ctx}/admin/catalog?editCategory=${category.categoryId}">Sửa</a><form action="${ctx}/admin/catalog" method="post"><input type="hidden" name="_csrf" value="${sessionScope.csrfToken}"><input type="hidden" name="type" value="category"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="${category.categoryId}"><button class="btn btn-small ${category.active ? 'btn-danger' : 'btn-primary'}" type="submit" data-confirm="${category.active ? 'Ẩn danh mục sẽ loại danh mục này khỏi lựa chọn của khách hàng. Tiếp tục?' : 'Bật lại danh mục này?'}">${category.active ? 'Ẩn' : 'Bật'}</button></form></div></td>
                     </tr>
                 </c:forEach>
+                <c:if test="${empty categories}"><tr><td colspan="5">Chưa có danh mục.</td></tr></c:if>
                 </tbody>
             </table>
         </div>
@@ -58,21 +58,22 @@
         </form>
 
         <div class="table-wrap subsection">
-            <table class="data-table">
+            <table class="data-table admin-responsive-table">
                 <thead><tr><th>Tên</th><th>Slug</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                 <tbody>
                 <c:forEach var="brand" items="${brands}">
                     <tr>
-                        <td><c:out value="${brand.name}" /></td>
-                        <td><c:out value="${brand.slug}" /></td>
-                        <td><span class="badge ${brand.active ? 'badge-success' : 'badge-neutral'}">${brand.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
-                        <td><div class="table-actions"><a class="btn btn-secondary btn-small" href="${ctx}/admin/catalog?editBrand=${brand.brandId}">Sửa</a><form action="${ctx}/admin/catalog" method="post"><input type="hidden" name="_csrf" value="${sessionScope.csrfToken}"><input type="hidden" name="type" value="brand"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="${brand.brandId}"><button class="btn btn-small ${brand.active ? 'btn-danger' : 'btn-primary'}" type="submit">${brand.active ? 'Ẩn' : 'Bật'}</button></form></div></td>
+                        <td data-label="Tên"><c:out value="${brand.name}" /></td>
+                        <td data-label="Slug"><c:out value="${brand.slug}" /></td>
+                        <td data-label="Trạng thái"><span class="badge ${brand.active ? 'badge-success' : 'badge-neutral'}">${brand.active ? 'Hoạt động' : 'Đang ẩn'}</span></td>
+                        <td data-label="Thao tác"><div class="table-actions"><a class="btn btn-secondary btn-small" href="${ctx}/admin/catalog?editBrand=${brand.brandId}">Sửa</a><form action="${ctx}/admin/catalog" method="post"><input type="hidden" name="_csrf" value="${sessionScope.csrfToken}"><input type="hidden" name="type" value="brand"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="${brand.brandId}"><button class="btn btn-small ${brand.active ? 'btn-danger' : 'btn-primary'}" type="submit" data-confirm="${brand.active ? 'Ẩn thương hiệu sẽ loại thương hiệu này khỏi lựa chọn của khách hàng. Tiếp tục?' : 'Bật lại thương hiệu này?'}">${brand.active ? 'Ẩn' : 'Bật'}</button></form></div></td>
                     </tr>
                 </c:forEach>
+                <c:if test="${empty brands}"><tr><td colspan="4">Chưa có thương hiệu.</td></tr></c:if>
                 </tbody>
             </table>
         </div>
     </section>
 </div>
 
-<jsp:include page="../components/footer.jsp" />
+<jsp:include page="../components/admin-footer.jsp" />

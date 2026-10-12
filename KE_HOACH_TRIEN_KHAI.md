@@ -38,7 +38,7 @@ Xây dựng website bán điện thoại, iPad/tablet, laptop và phụ kiện v
 
 ### Mốc hiện tại — 28/09/2026
 
-Dự án đã hoàn thành **phần kiểm thử các luồng JSP chính của Bước 14**. Bộ `scripts/integration-smoke.ps1` chạy đạt 36/36 kiểm tra trên Tomcat và SQL Server, gồm tài khoản, validation, CSRF, phân quyền, sản phẩm, yêu thích, giỏ hàng, checkout, đơn hàng, tồn kho và CRUD catalog admin. Dự án tiếp tục dùng Servlet MVC + JSP/JSTL. Bước tiếp theo là hoàn thiện an toàn dữ liệu hình ảnh, bổ sung kiểm thử cạnh tranh/rollback chuyên sâu và chuẩn bị đóng gói triển khai.
+Dự án đã hoàn thành **phần kiểm thử các luồng JSP chính của Bước 14**. Bộ `scripts/integration-smoke.ps1` chạy đạt 36/36 kiểm tra trên Tomcat và SQL Server, gồm tài khoản, validation, CSRF, phân quyền, sản phẩm, yêu thích, giỏ hàng, checkout, đơn hàng, tồn kho và CRUD catalog admin. Upload ảnh JPEG/PNG cũng đã được kiểm tra riêng. Dự án tiếp tục dùng Servlet MVC + JSP/JSTL. Bước tiếp theo là bổ sung kiểm thử cạnh tranh/rollback chuyên sâu và chuẩn bị đóng gói triển khai.
 
 ## 3. Kiểm tra database hiện tại
 
@@ -404,7 +404,7 @@ PENDING -> CONFIRMED -> PROCESSING -> SHIPPING -> COMPLETED
 - [x] Hoàn thiện validation email, điện thoại, mật khẩu và độ dài input ở Service; JSP có giới hạn tương ứng.
 - [x] Cookie session dùng `HttpOnly`; `Secure` và `SameSite` sẽ bật/cấu hình khi triển khai HTTPS.
 - [ ] Không ghi password, connection string hoặc dữ liệu thanh toán nhạy cảm vào log.
-- [ ] Giới hạn loại file, kích thước file và tên file khi upload ảnh.
+- [x] Upload ảnh chỉ nhận JPEG/PNG, tối đa 5 MB, giới hạn kích thước/pixel và tạo tên UUID an toàn.
 
 ### Bước 14: Kiểm thử
 
@@ -456,6 +456,7 @@ PENDING -> CONFIRMED -> PROCESSING -> SHIPPING -> COMPLETED
 | Sắp xếp sản phẩm | Giá tăng/giảm đúng qua nhiều trang; mới nhất là mặc định; giữ bộ lọc và phân trang |
 | Bộ tích hợp `scripts/integration-smoke.ps1` | Đạt 36/36; dữ liệu test được dọn tự động |
 | Validation đầu vào | Chặn email/số điện thoại sai, họ tên và ghi chú đơn vượt giới hạn; không tạo dữ liệu rác |
+| Upload ảnh sản phẩm | PNG hợp lệ được lưu/tải/xóa; file giả MIME và URL nguy hiểm bị từ chối |
 | Tài khoản và bảo mật | Đăng ký, email trùng, sai mật khẩu, CSRF và quyền admin đều đạt |
 | Yêu thích và giỏ hàng | Thêm yêu thích, gộp SKU trùng và chặn vượt tồn kho đều đạt |
 | Checkout và đơn hàng | Tạo COD, kiểm tra tổng tiền, trừ/hoàn kho và bảo vệ quyền sở hữu đều đạt |
@@ -479,7 +480,7 @@ Thứ tự triển khai tiếp theo:
 1. Đã hoàn thiện sắp xếp danh sách sản phẩm theo giá và sản phẩm mới nhất.
 2. Đã hoàn thiện sửa/ẩn danh mục và thương hiệu trong trang admin.
 3. Đã bổ sung validation email, số điện thoại và giới hạn độ dài dữ liệu đầu vào.
-4. Hoàn thiện kiểm soát loại file, kích thước và tên file khi upload ảnh sản phẩm.
+4. Đã hoàn thiện kiểm soát loại file, kích thước, số pixel và tên file khi upload ảnh sản phẩm.
 5. Kiểm thử hai checkout đồng thời và rollback khi transaction tạo đơn gặp lỗi.
 6. Rà soát giao diện JSP trên desktop/mobile và thông báo lỗi/thành công của các form.
 7. Tách cấu hình development/production, tạo tài khoản SQL Server quyền vừa đủ và cấu hình logging.

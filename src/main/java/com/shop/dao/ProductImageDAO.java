@@ -10,4 +10,6 @@ public interface ProductImageDAO extends GenericDAO<ProductImage> {
     List<ProductImage> findByProductId(Long productId);
     List<ProductImage> findByVariantId(Long variantId);
     Optional<ProductImage> findPrimaryByProductId(Long productId);
+    boolean createWithPrimarySelection(ProductImage image);
+    ProductImage updateMetadata(Long productId, Long imageId, int sortOrder, boolean primary);
 }

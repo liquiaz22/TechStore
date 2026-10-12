@@ -19,8 +19,15 @@ Website bán điện thoại, iPad, laptop và phụ kiện công nghệ, xây d
 - `TECHSTORE_MAIL_PASSWORD`
 - `TECHSTORE_VNPAY_TMN_CODE`
 - `TECHSTORE_VNPAY_HASH_SECRET`
+- `TECHSTORE_VNPAY_PAY_URL` (tùy chọn, dùng khi chuyển sandbox/production)
+- `TECHSTORE_VNPAY_RETURN_URL` (tùy chọn, mặc định lấy từ `app.url`)
 
-Hai biến VNPay chỉ cần thiết khi sử dụng chức năng thanh toán VNPay.
+Các biến VNPay chỉ cần thiết khi sử dụng chức năng thanh toán VNPay; hai biến
+`TMN_CODE` và `HASH_SECRET` là bắt buộc.
+
+Khi đăng ký môi trường VNPay, cấu hình IPN URL là
+`{app.url}/payment/vnpay/ipn`. VNPay phải truy cập được URL này từ Internet;
+`localhost` chỉ phù hợp để kiểm tra luồng trả về trên trình duyệt.
 
 ## Khởi tạo database
 
@@ -28,7 +35,13 @@ Chạy các script theo thứ tự:
 
 1. `database/TechStore.sql`
 2. `database/TechStore_upgrade_01.sql`
-3. `database/TechStore_seed_tgdd_demo.sql`
+3. `database/TechStore_upgrade_02_account.sql`
+4. `database/TechStore_upgrade_03_catalog.sql`
+5. `database/TechStore_upgrade_04_reports.sql`
+6. `database/TechStore_upgrade_05_vnpay.sql`
+7. `database/TechStore_seed_tgdd_demo.sql`
+
+Với database đang sử dụng, chỉ chạy các file `upgrade` chưa được áp dụng. Các script nâng cấp mới được viết theo kiểu có thể chạy lại an toàn. Sau khi tạo hoặc thay đổi biến môi trường, cần khởi động lại Eclipse/Tomcat để tiến trình Java nhận giá trị mới.
 
 ## Build và chạy
 

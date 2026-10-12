@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Trạng thái hệ thống" scope="request" />
-<jsp:include page="components/header.jsp" />
+<jsp:include page="components/store-header.jsp" />
 <section class="narrow-section">
     <div class="panel health-panel">
         <h1>Trạng thái hệ thống</h1>
@@ -17,4 +17,4 @@
         </c:if>
     </div>
 </section>
-<jsp:include page="components/footer.jsp" />
+<jsp:include page="components/store-footer.jsp" />

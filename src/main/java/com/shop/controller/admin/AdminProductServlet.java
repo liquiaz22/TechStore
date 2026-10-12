@@ -1,8 +1,14 @@
 package com.shop.controller.admin;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import com.shop.entity.Product;
+import com.shop.entity.ProductVariant;
 import com.shop.service.BrandService;
 import com.shop.service.CategoryService;
 import com.shop.service.ProductImageService;
@@ -16,6 +22,7 @@ import com.shop.service.impl.ProductServiceImpl;
 import com.shop.service.impl.ProductSpecificationServiceImpl;
 import com.shop.service.impl.ProductVariantServiceImpl;
 import com.shop.utils.WebUtil;
+import com.shop.utils.ValidationUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -26,6 +33,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet(urlPatterns = {"/admin/products", "/admin/products/form", "/admin/products/save"})
 public class AdminProductServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final int PAGE_SIZE = 15;
+    private static final Set<String> PRODUCT_STATUSES = Set.of("ACTIVE", "DRAFT", "INACTIVE");
     private final ProductService productService = new ProductServiceImpl();
     private final CategoryService categoryService = new CategoryServiceImpl();
     private final BrandService brandService = new BrandServiceImpl();
@@ -51,11 +60,42 @@ public class AdminProductServlet extends HttpServlet {
                 request.setAttribute("variants", variantService.findByProductId(id));
                 request.setAttribute("images", imageService.findByProductId(id));
                 request.setAttribute("specifications", specificationService.findByProductId(id));
+                String editVariantId = request.getParameter("editVariant");
+                if (editVariantId != null && !editVariantId.isBlank()) {
+                    ProductVariant editingVariant = variantService.findById(Long.valueOf(editVariantId));
+                    if (editingVariant == null
+                            || !editingVariant.getProduct().getProductId().equals(id)) {
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                        return;
+                    }
+                    request.setAttribute("editingVariant", editingVariant);
+                }
             }
             WebUtil.forward(request, response, "admin/product-form");
             return;
         }
-        request.setAttribute("products", productService.findAll());
+        String keyword = ValidationUtil.optionalText(request.getParameter("q"), "Từ khóa", 150);
+        String status = WebUtil.trimToNull(request.getParameter("status"));
+        if (status != null && !PRODUCT_STATUSES.contains(status)) status = null;
+        String normalizedKeyword = keyword == null ? null : keyword.toLowerCase(Locale.ROOT);
+        String selectedStatus = status;
+        List<Product> filtered = productService.findAll().stream()
+                .filter(product -> normalizedKeyword == null
+                        || product.getName().toLowerCase(Locale.ROOT).contains(normalizedKeyword)
+                        || product.getSlug().toLowerCase(Locale.ROOT).contains(normalizedKeyword))
+                .filter(product -> selectedStatus == null
+                        || selectedStatus.equals(product.getStatus()))
+                .toList();
+        int totalPages = Math.max(1, (int) Math.ceil(filtered.size() / (double) PAGE_SIZE));
+        int page = Math.min(parsePage(request.getParameter("page")), totalPages);
+        int fromIndex = Math.min((page - 1) * PAGE_SIZE, filtered.size());
+        int toIndex = Math.min(fromIndex + PAGE_SIZE, filtered.size());
+        request.setAttribute("products", filtered.subList(fromIndex, toIndex));
+        request.setAttribute("totalProducts", filtered.size());
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("keyword", keyword);
+        request.setAttribute("selectedStatus", status);
         WebUtil.forward(request, response, "admin/products");
     }
 
@@ -77,11 +117,35 @@ public class AdminProductServlet extends HttpServlet {
                     ? null : brandService.findById(Integer.valueOf(brandId)));
             if (id == null) productService.create(product); else productService.update(product);
             WebUtil.success(request, "Đã lưu sản phẩm.");
-            WebUtil.redirect(request, response, "/admin/products/form?id=" + product.getProductId());
+            WebUtil.redirect(request, response, "/admin/products/form?id=" + product.getProductId()
+                    + productReturnQuery(request));
         } catch (RuntimeException ex) {
             WebUtil.error(request, ex.getMessage());
             WebUtil.redirect(request, response, "/admin/products");
         }
+    }
+
+    private int parsePage(String value) {
+        try {
+            return value == null || value.isBlank() ? 1 : Math.max(1, Integer.parseInt(value));
+        } catch (NumberFormatException ex) {
+            return 1;
+        }
+    }
+
+    private String productReturnQuery(HttpServletRequest request) {
+        StringBuilder query = new StringBuilder();
+        appendQuery(query, "q", request.getParameter("q"));
+        appendQuery(query, "listStatus", request.getParameter("listStatus"));
+        appendQuery(query, "page", request.getParameter("page"));
+        return query.toString();
+    }
+
+    private void appendQuery(StringBuilder query, String name, String value) {
+        String normalized = WebUtil.trimToNull(value);
+        if (normalized == null) return;
+        query.append('&').append(name).append('=')
+                .append(URLEncoder.encode(normalized, StandardCharsets.UTF_8));
     }
 
     private String required(HttpServletRequest request, String name) {

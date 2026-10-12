@@ -20,8 +20,10 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (WebUtil.currentUser(request) != null) {
-            WebUtil.redirect(request, response, "/home");
+        var currentUser = WebUtil.currentUser(request);
+        if (currentUser != null) {
+            WebUtil.redirect(request, response,
+                    "ADMIN".equals(currentUser.getRole()) ? "/admin" : "/home");
             return;
         }
         WebUtil.forward(request, response, "auth/login");
@@ -43,10 +45,22 @@ public class LoginServlet extends HttpServlet {
         request.getSession().setAttribute("user", user.get());
         String savedUrl = (String) request.getSession().getAttribute("savedUrl");
         request.getSession().removeAttribute("savedUrl");
-        if (savedUrl != null && savedUrl.startsWith(request.getContextPath() + "/")) {
-            response.sendRedirect(savedUrl);
-        } else {
-            WebUtil.redirect(request, response, "/home");
+
+        boolean validSavedUrl = savedUrl != null
+                && savedUrl.startsWith(request.getContextPath() + "/");
+        boolean admin = "ADMIN".equals(user.get().getRole());
+        if (admin) {
+            if (validSavedUrl && savedUrl.startsWith(request.getContextPath() + "/admin")) {
+                response.sendRedirect(savedUrl);
+            } else {
+                WebUtil.redirect(request, response, "/admin");
+            }
+            return;
         }
+        if (validSavedUrl && !savedUrl.startsWith(request.getContextPath() + "/admin")) {
+            response.sendRedirect(savedUrl);
+            return;
+        }
+        WebUtil.redirect(request, response, "/home");
     }
 }
