@@ -91,7 +91,7 @@ public class UserServiceImpl extends AbstractService<User> implements UserServic
         return ValidationUtil.email(email);
     }
 
-    private void validatePassword(String password) {
+    public void validatePassword(String password) {
         if (password == null || password.length() < 8 || password.length() > 72) {
             throw new IllegalArgumentException("Mật khẩu phải dài từ 8 đến 72 ký tự.");
         }

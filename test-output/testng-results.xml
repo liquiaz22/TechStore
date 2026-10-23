@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results ignored="0" total="5" passed="5" failed="0" skipped="0">
+  <reporter-output>
+  </reporter-output>
+  <suite started-at="2026-10-23T08:23:49 ICT" name="Default suite" finished-at="2026-10-23T08:23:56 ICT" duration-ms="6836">
+    <groups>
+    </groups>
+    <test started-at="2026-10-23T08:23:49 ICT" name="Default test" finished-at="2026-10-23T08:23:56 ICT" duration-ms="6836">
+      <class name="com.shop.selenium.TechStoreSeleniumTest">
+        <test-method is-config="true" signature="setUpBrowser()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:49 ICT" name="setUpBrowser" finished-at="2026-10-23T08:23:52 ICT" duration-ms="2831" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- setUpBrowser -->
+        <test-method is-config="true" signature="resetGuestSession()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:52 ICT" name="resetGuestSession" finished-at="2026-10-23T08:23:52 ICT" duration-ms="20" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- resetGuestSession -->
+        <test-method signature="homePageDisplaysMainStorefrontElements()[pri:1, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:52 ICT" name="homePageDisplaysMainStorefrontElements" description="Trang chủ hiển thị header, ô tìm kiếm và nội dung chính" finished-at="2026-10-23T08:23:53 ICT" duration-ms="1884" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- homePageDisplaysMainStorefrontElements -->
+        <test-method is-config="true" signature="captureFailure(org.testng.ITestResult)[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:53 ICT" name="captureFailure" finished-at="2026-10-23T08:23:53 ICT" duration-ms="2" status="PASS">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[[TestResult name=homePageDisplaysMainStorefrontElements status=SUCCESS method=TechStoreSeleniumTest.homePageDisplaysMainStorefrontElements()[pri:1, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5] output={null}]]]>
+              </value>
+            </param>
+          </params>
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- captureFailure -->
+        <test-method is-config="true" signature="resetGuestSession()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:53 ICT" name="resetGuestSession" finished-at="2026-10-23T08:23:54 ICT" duration-ms="9" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- resetGuestSession -->
+        <test-method signature="headerSearchOpensCatalogWithKeyword()[pri:2, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:54 ICT" name="headerSearchOpensCatalogWithKeyword" description="Tìm kiếm từ header chuyển đến catalog và giữ từ khóa" finished-at="2026-10-23T08:23:55 ICT" duration-ms="1165" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- headerSearchOpensCatalogWithKeyword -->
+        <test-method is-config="true" signature="captureFailure(org.testng.ITestResult)[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="captureFailure" finished-at="2026-10-23T08:23:55 ICT" duration-ms="0" status="PASS">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[[TestResult name=headerSearchOpensCatalogWithKeyword status=SUCCESS method=TechStoreSeleniumTest.headerSearchOpensCatalogWithKeyword()[pri:2, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5] output={null}]]]>
+              </value>
+            </param>
+          </params>
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- captureFailure -->
+        <test-method is-config="true" signature="resetGuestSession()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="resetGuestSession" finished-at="2026-10-23T08:23:55 ICT" duration-ms="10" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- resetGuestSession -->
+        <test-method signature="registrationRejectsMismatchedPasswordConfirmation()[pri:3, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="registrationRejectsMismatchedPasswordConfirmation" description="Đăng ký với mật khẩu xác nhận không khớp bị từ chối" finished-at="2026-10-23T08:23:55 ICT" duration-ms="463" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- registrationRejectsMismatchedPasswordConfirmation -->
+        <test-method is-config="true" signature="captureFailure(org.testng.ITestResult)[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="captureFailure" finished-at="2026-10-23T08:23:55 ICT" duration-ms="1" status="PASS">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[[TestResult name=registrationRejectsMismatchedPasswordConfirmation status=SUCCESS method=TechStoreSeleniumTest.registrationRejectsMismatchedPasswordConfirmation()[pri:3, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5] output={null}]]]>
+              </value>
+            </param>
+          </params>
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- captureFailure -->
+        <test-method is-config="true" signature="resetGuestSession()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="resetGuestSession" finished-at="2026-10-23T08:23:55 ICT" duration-ms="7" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- resetGuestSession -->
+        <test-method signature="cartRequiresAuthenticationForGuest()[pri:4, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="cartRequiresAuthenticationForGuest" description="Khách chưa đăng nhập bị chuyển về trang đăng nhập khi mở giỏ hàng" finished-at="2026-10-23T08:23:55 ICT" duration-ms="107" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- cartRequiresAuthenticationForGuest -->
+        <test-method is-config="true" signature="captureFailure(org.testng.ITestResult)[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="captureFailure" finished-at="2026-10-23T08:23:55 ICT" duration-ms="1" status="PASS">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[[TestResult name=cartRequiresAuthenticationForGuest status=SUCCESS method=TechStoreSeleniumTest.cartRequiresAuthenticationForGuest()[pri:4, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5] output={null}]]]>
+              </value>
+            </param>
+          </params>
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- captureFailure -->
+        <test-method is-config="true" signature="resetGuestSession()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="resetGuestSession" finished-at="2026-10-23T08:23:55 ICT" duration-ms="6" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- resetGuestSession -->
+        <test-method signature="adminAreaRequiresAuthenticationForGuest()[pri:5, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="adminAreaRequiresAuthenticationForGuest" description="Khách chưa đăng nhập không được truy cập khu vực quản trị" finished-at="2026-10-23T08:23:55 ICT" duration-ms="69" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- adminAreaRequiresAuthenticationForGuest -->
+        <test-method is-config="true" signature="captureFailure(org.testng.ITestResult)[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="captureFailure" finished-at="2026-10-23T08:23:55 ICT" duration-ms="0" status="PASS">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[[TestResult name=adminAreaRequiresAuthenticationForGuest status=SUCCESS method=TechStoreSeleniumTest.adminAreaRequiresAuthenticationForGuest()[pri:5, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5] output={null}]]]>
+              </value>
+            </param>
+          </params>
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- captureFailure -->
+        <test-method is-config="true" signature="closeBrowser()[pri:0, instance:com.shop.selenium.TechStoreSeleniumTest@1e66f1f5]" started-at="2026-10-23T08:23:55 ICT" name="closeBrowser" finished-at="2026-10-23T08:23:56 ICT" duration-ms="185" status="PASS">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- closeBrowser -->
+      </class> <!-- com.shop.selenium.TechStoreSeleniumTest -->
+    </test> <!-- Default test -->
+  </suite> <!-- Default suite -->
+</testng-results>
